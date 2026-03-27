@@ -18,7 +18,7 @@ jobs:
 
       - name: Hent data fra Doffin API
         run: |
-          curl -s -X POST "https://api.doffin.no/webclient/api/v2/search-api/search" \
+          RESPONSE=$(curl -s -X POST "https://api.doffin.no/webclient/api/v2/search-api/search" \
             -H "Content-Type: application/json" \
             -d '{
               "facets": {
@@ -27,7 +27,9 @@ jobs:
                 "status": {"checkedItems": ["ACTIVE"]}
               },
               "numHitsPerPage": 1000
-            }' > data.json
+            }')
+          DATO=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+          echo "$RESPONSE" | sed "s/^{/{\"generatedAt\":\"$DATO\",/" > data.json
 
       - name: Commit og push data.json
         run: |
