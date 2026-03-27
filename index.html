@@ -240,7 +240,7 @@
         const publisert = n.publicationDate ? `Kunngjort: ${formatDate(n.publicationDate)}` : "";
         const verdi = n.estimatedValue
           ? `ca. ${n.estimatedValue.amount.toLocaleString("no-NO")} ${n.estimatedValue.currencyCode}`
-          : "";
+          : "Ikke oppgitt";
 
         card.innerHTML = `
           <div class="badge">${typeLabel}</div>
@@ -250,7 +250,7 @@
             <span>📍 ${places}</span>
             <span class="${deadlineSoon ? "deadline-soon" : ""}">${deadlineSoon ? "⚠️ " : ""}${deadlineText}</span>
             ${publisert ? `<span>📅 ${publisert}</span>` : ""}
-            ${verdi ? `<span>💰 ${verdi}</span>` : ""}
+            <span>💰 ${verdi}</span>
           </div>
         `;
 
