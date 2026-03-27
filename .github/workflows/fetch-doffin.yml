@@ -1,0 +1,42 @@
+name: Hent Doffin-data
+
+  on:
+    schedule:
+      - cron: "0 5 * * *"  # Kjører hver natt kl. 05:00 UTC
+  (07:00 norsk tid)
+    workflow_dispatch:       # Kan også kjøres manuelt fra
+  GitHub
+
+  jobs:
+    fetch:
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Sjekk ut kode
+          uses: actions/checkout@v4
+
+        - name: Hent data fra Doffin API
+          run: |
+            curl -s -X POST
+  "https://api.doffin.no/webclient/api/v2/search-api/search" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "facets": {
+                  "cpvCodesId": {"checkedItems":
+  ["72000000","72200000","72300000","72400000","72600000"]},
+                  "type": {"checkedItems":
+  ["COMPETITION","ANNOUNCEMENT_OF_COMPETITION","DYNAMIC_PURCHASI
+  NG_SCHEME","PRE_ANNOUNCEMENT"]},
+                  "status": {"checkedItems": ["ACTIVE"]}
+                },
+                "numHitsPerPage": 1000
+              }' > data.json
+
+        - name: Commit og push data.json
+          run: |
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add data.json
+            git diff --cached --quiet || git commit -m "Oppdater
+   Doffin-data $(date -u '+%Y-%m-%d')"
+            git push
