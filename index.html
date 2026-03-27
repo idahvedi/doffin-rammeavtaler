@@ -237,6 +237,10 @@
         const deadlineSoon = days !== null && days <= 14;
         const places = n.placeOfPerformance?.join(", ") || "Ikke oppgitt";
         const link = `${DOFFIN_BASE}/${n.id}`;
+        const publisert = n.publicationDate ? `Kunngjort: ${formatDate(n.publicationDate)}` : "";
+        const verdi = n.estimatedValue
+          ? `ca. ${n.estimatedValue.amount.toLocaleString("no-NO")} ${n.estimatedValue.currencyCode}`
+          : "";
 
         card.innerHTML = `
           <div class="badge">${typeLabel}</div>
@@ -245,6 +249,8 @@
             <span>🏢 ${buyer}</span>
             <span>📍 ${places}</span>
             <span class="${deadlineSoon ? "deadline-soon" : ""}">${deadlineSoon ? "⚠️ " : ""}${deadlineText}</span>
+            ${publisert ? `<span>📅 ${publisert}</span>` : ""}
+            ${verdi ? `<span>💰 ${verdi}</span>` : ""}
           </div>
         `;
 
