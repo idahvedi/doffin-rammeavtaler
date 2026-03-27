@@ -120,6 +120,35 @@
       padding: 16px 20px;
       border: 1px solid #e0e0e0;
       position: relative;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      border-color: #b0c4f0;
+    }
+
+    .card-beskrivelse {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+      font-size: 0.85rem;
+      color: #444;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .card.utvidet .card-beskrivelse {
+      display: block;
+    }
+
+    .card-ekspander {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .card-title {
@@ -409,6 +438,8 @@
           : "Ikke oppgitt";
         const erFavoritt = favoritter.has(n.id);
 
+        const beskrivelse = n.description || "";
+
         card.innerHTML = `
           <button class="favoritt-btn ${erFavoritt ? "aktiv" : ""}" data-id="${n.id}" title="Merk som favoritt">⭐</button>
           <div class="badge">${typeLabel}</div>
@@ -420,9 +451,12 @@
             <span>💰 ${verdi}</span>
             <span class="${deadlineSoon ? "deadline-soon" : ""}"><strong>🗓️ ${deadlineText}${deadlineSoon ? " ⚠️" : ""}</strong></span>
           </div>
+          <div class="card-ekspander">▼ Vis beskrivelse</div>
+          <div class="card-beskrivelse">${beskrivelse || "Ingen beskrivelse tilgjengelig."}</div>
         `;
 
         card.querySelector(".favoritt-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
           const id = e.currentTarget.dataset.id;
           if (favoritter.has(id)) {
             favoritter.delete(id);
@@ -431,6 +465,12 @@
           }
           lagreFavoritter();
           renderResults();
+        });
+
+        card.addEventListener("click", (e) => {
+          if (e.target.closest("a") || e.target.closest(".favoritt-btn")) return;
+          const utvidet = card.classList.toggle("utvidet");
+          card.querySelector(".card-ekspander").textContent = utvidet ? "▲ Skjul beskrivelse" : "▼ Vis beskrivelse";
         });
 
         container.appendChild(card);
