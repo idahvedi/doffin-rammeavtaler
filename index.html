@@ -46,14 +46,13 @@
 
     #filters {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 20px;
-      justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
     }
 
     #filter-steder {
+      flex: 1;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -69,6 +68,7 @@
       user-select: none;
       transition: background 0.15s, border-color 0.15s;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .favoritt-toggle.active {
