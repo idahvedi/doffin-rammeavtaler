@@ -46,16 +46,9 @@
 
     #filters {
       display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      align-items: flex-start;
-    }
-
-    #filter-steder {
-      flex: 1;
-      display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      margin-bottom: 20px;
     }
 
     .favoritt-toggle {
@@ -68,7 +61,7 @@
       user-select: none;
       transition: background 0.15s, border-color 0.15s;
       white-space: nowrap;
-      flex-shrink: 0;
+      margin-left: auto;
     }
 
     .favoritt-toggle.active {
@@ -184,7 +177,6 @@
   <div id="status"><span id="status-treff">Henter utlysninger…</span><span id="status-dato"></span></div>
   <input id="sokefelt" type="search" placeholder="Søk i tittel eller oppdragsgiver…" />
   <div id="filters">
-    <div id="filter-steder"></div>
     <button class="favoritt-toggle" id="favoritt-toggle">⭐ Vis kun favoritter</button>
   </div>
   <div id="no-results">Ingen utlysninger matcher søket.</div>
@@ -248,8 +240,12 @@
     }
 
     function renderFilters() {
-      const container = document.getElementById("filter-steder");
-      container.innerHTML = "";
+      const container = document.getElementById("filters");
+      const favorittBtn = document.getElementById("favoritt-toggle");
+      // Fjern alle chips, men behold favoritt-knappen
+      Array.from(container.children).forEach((el) => {
+        if (el !== favorittBtn) el.remove();
+      });
       const teller = tellPerGruppe();
 
       const alleAktive = ["Oslo", "Akershus", "Viken", "Resten av landet", "Ikke stedspesifikt"].every(
@@ -284,7 +280,7 @@
           renderResults();
         });
 
-        container.appendChild(chip);
+        container.insertBefore(chip, favorittBtn);
       }
     }
 
