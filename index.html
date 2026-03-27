@@ -124,7 +124,6 @@
   <div id="results"></div>
 
   <script>
-    const API_URL = "https://api.doffin.no/webclient/api/v2/search-api/search";
     const DOFFIN_BASE = "https://doffin.no/notice";
 
     const DEFAULT_LOCATIONS = ["Oslo", "Akershus"];
@@ -140,19 +139,7 @@
     let activeFilters = new Set(DEFAULT_LOCATIONS);
 
     async function fetchNotices() {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          facets: {
-            cpvCodesId: { checkedItems: ["72000000", "72200000", "72300000", "72400000", "72600000"] },
-            type: { checkedItems: ["COMPETITION", "ANNOUNCEMENT_OF_COMPETITION", "DYNAMIC_PURCHASING_SCHEME", "PRE_ANNOUNCEMENT"] },
-            status: { checkedItems: ["ACTIVE"] },
-          },
-          numHitsPerPage: 1000,
-        }),
-      });
-
+      const response = await fetch("data.json");
       const data = await response.json();
       return data.hits || [];
     }
