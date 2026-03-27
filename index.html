@@ -30,6 +30,41 @@
       gap: 4px;
     }
 
+    #sokefelt {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    #sokefelt:focus {
+      border-color: #1a56db;
+    }
+
+    #favoritt-rad {
+      margin-bottom: 10px;
+    }
+
+    .favoritt-toggle {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #f0c040;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.85rem;
+      user-select: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .favoritt-toggle.active {
+      background: #f0c040;
+      border-color: #f0c040;
+      color: #333;
+    }
+
     #filters {
       display: flex;
       flex-wrap: wrap;
@@ -65,12 +100,14 @@
       border-radius: 8px;
       padding: 16px 20px;
       border: 1px solid #e0e0e0;
+      position: relative;
     }
 
     .card-title {
       font-size: 1rem;
       font-weight: 600;
       margin-bottom: 6px;
+      padding-right: 36px;
     }
 
     .card-title a {
@@ -112,6 +149,23 @@
       font-weight: 600;
     }
 
+    .favoritt-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+      opacity: 0.35;
+      transition: opacity 0.15s;
+    }
+
+    .favoritt-btn.aktiv {
+      opacity: 1;
+    }
+
     #no-results {
       color: #666;
       font-size: 0.95rem;
@@ -123,8 +177,12 @@
 
   <h1>Doffin – IT-rammeavtaler</h1>
   <div id="status"><span id="status-treff">Henter utlysninger…</span><span id="status-dato"></span></div>
+  <input id="sokefelt" type="search" placeholder="Søk i tittel eller oppdragsgiver…" />
+  <div id="favoritt-rad">
+    <button class="favoritt-toggle" id="favoritt-toggle">⭐ Vis kun favoritter</button>
+  </div>
   <div id="filters"></div>
-  <div id="no-results">Ingen utlysninger matcher valgt sted.</div>
+  <div id="no-results">Ingen utlysninger matcher søket.</div>
   <div id="results"></div>
 
   <script>
@@ -157,7 +215,9 @@
 
     let allNotices = [];
     let activeFilters = new Set(DEFAULT_FILTERS);
-
+    let favoritter = new Set(JSON.parse(localStorage.getItem("favoritter") || "[]"));
+    let visFavoritter = false;
+    let sokeord = "";
     let sistOppdatert = "";
 
     async function fetchNotices() {
@@ -167,6 +227,10 @@
         sistOppdatert = formatDate(data.generatedAt);
       }
       return data.hits || [];
+    }
+
+    function lagreFavoritter() {
+      localStorage.setItem("favoritter", JSON.stringify([...favoritter]));
     }
 
     function tellPerGruppe() {
@@ -235,10 +299,19 @@
       const noResults = document.getElementById("no-results");
       container.innerHTML = "";
 
+      const søk = sokeord.toLowerCase();
+
       const filtered = allNotices.filter((n) => {
+        if (visFavoritter && !favoritter.has(n.id)) return false;
         if (activeFilters.size === 0) return false;
         const gruppe = kategoriserSted(n.placeOfPerformance);
-        return activeFilters.has(gruppe);
+        if (!activeFilters.has(gruppe)) return false;
+        if (søk) {
+          const tittel = (n.heading || "").toLowerCase();
+          const kjøper = (n.buyer?.[0]?.name || "").toLowerCase();
+          if (!tittel.includes(søk) && !kjøper.includes(søk)) return false;
+        }
+        return true;
       });
 
       noResults.style.display = filtered.length === 0 ? "block" : "none";
@@ -261,8 +334,10 @@
         const verdi = n.estimatedValue
           ? `ca. ${n.estimatedValue.amount.toLocaleString("no-NO")} ${n.estimatedValue.currencyCode}`
           : "Ikke oppgitt";
+        const erFavoritt = favoritter.has(n.id);
 
         card.innerHTML = `
+          <button class="favoritt-btn ${erFavoritt ? "aktiv" : ""}" data-id="${n.id}" title="Merk som favoritt">⭐</button>
           <div class="badge">${typeLabel}</div>
           <div class="card-title"><a href="${link}" target="_blank">${n.heading || "Uten tittel"}</a></div>
           <div class="card-meta">
@@ -274,6 +349,17 @@
           </div>
         `;
 
+        card.querySelector(".favoritt-btn").addEventListener("click", (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (favoritter.has(id)) {
+            favoritter.delete(id);
+          } else {
+            favoritter.add(id);
+          }
+          lagreFavoritter();
+          renderResults();
+        });
+
         container.appendChild(card);
       }
 
@@ -283,6 +369,17 @@
         sistOppdatert ? `Sist oppdatert: ${sistOppdatert}` : "";
     }
 
+    document.getElementById("sokefelt").addEventListener("input", (e) => {
+      sokeord = e.target.value;
+      renderResults();
+    });
+
+    document.getElementById("favoritt-toggle").addEventListener("click", () => {
+      visFavoritter = !visFavoritter;
+      document.getElementById("favoritt-toggle").classList.toggle("active", visFavoritter);
+      renderResults();
+    });
+
     async function init() {
       try {
         allNotices = await fetchNotices();
@@ -290,7 +387,7 @@
         renderFilters();
         renderResults();
       } catch (err) {
-        document.getElementById("status").textContent = "Kunne ikke hente data fra Doffin.";
+        document.getElementById("status-treff").textContent = "Kunne ikke hente data fra Doffin.";
         console.error(err);
       }
     }
