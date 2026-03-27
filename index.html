@@ -44,10 +44,26 @@
       border-color: #1a56db;
     }
 
-    #filters {
+    .filter-gruppe {
+      margin-bottom: 10px;
+    }
+
+    .filter-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+
+    .filter-chips {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+    }
+
+    #filter-sted-rad {
       margin-bottom: 20px;
     }
 
@@ -176,8 +192,15 @@
   <h1>Doffin – IT-rammeavtaler</h1>
   <div id="status"><span id="status-treff">Henter utlysninger…</span><span id="status-dato"></span></div>
   <input id="sokefelt" type="search" placeholder="Søk i tittel eller oppdragsgiver…" />
-  <div id="filters">
-    <button class="favoritt-toggle" id="favoritt-toggle">⭐ Vis kun favoritter</button>
+  <div id="filter-sted-rad">
+    <div class="filter-label">Sted</div>
+    <div id="filters" class="filter-chips">
+      <button class="favoritt-toggle" id="favoritt-toggle">⭐ Vis kun favoritter</button>
+    </div>
+  </div>
+  <div class="filter-gruppe">
+    <div class="filter-label">Type</div>
+    <div id="type-filters" class="filter-chips"></div>
   </div>
   <div id="no-results">Ingen utlysninger matcher søket.</div>
   <div id="results"></div>
@@ -194,6 +217,16 @@
 
     const FILTER_GROUPS = ["Oslo", "Akershus", "Viken", "Resten av landet", "Ikke stedspesifikt", "Alle"];
     const DEFAULT_FILTERS = new Set(["Oslo", "Akershus"]);
+
+    const TYPE_FILTER_GROUPS = ["Konkurranse", "Kunngjøring av konkurranse", "Dynamisk innkjøpsordning", "Forhåndskunngjøring", "Alle"];
+    const TYPE_KEY_MAP = {
+      "Konkurranse": "COMPETITION",
+      "Kunngjøring av konkurranse": "ANNOUNCEMENT_OF_COMPETITION",
+      "Dynamisk innkjøpsordning": "DYNAMIC_PURCHASING_SCHEME",
+      "Forhåndskunngjøring": "PRE_ANNOUNCEMENT",
+    };
+    const ALL_TYPES = new Set(Object.values(TYPE_KEY_MAP));
+    let activeTypes = new Set(ALL_TYPES);
 
     const OSLO_NAMES = ["Oslo"];
     const AKERSHUS_NAMES = ["Akershus"];
@@ -284,6 +317,41 @@
       }
     }
 
+    function renderTypeFilters() {
+      const container = document.getElementById("type-filters");
+      container.innerHTML = "";
+      const alleAktive = [...ALL_TYPES].every((t) => activeTypes.has(t));
+
+      for (const label of TYPE_FILTER_GROUPS) {
+        const chip = document.createElement("button");
+        const isAlle = label === "Alle";
+        const typeKey = TYPE_KEY_MAP[label];
+        const isActive = isAlle ? alleAktive : activeTypes.has(typeKey);
+        chip.className = "chip" + (isActive ? " active" : "");
+        chip.textContent = label;
+
+        chip.addEventListener("click", () => {
+          if (isAlle) {
+            if (alleAktive) {
+              activeTypes.clear();
+            } else {
+              ALL_TYPES.forEach((t) => activeTypes.add(t));
+            }
+          } else {
+            if (activeTypes.has(typeKey)) {
+              activeTypes.delete(typeKey);
+            } else {
+              activeTypes.add(typeKey);
+            }
+          }
+          renderTypeFilters();
+          renderResults();
+        });
+
+        container.appendChild(chip);
+      }
+    }
+
     function formatDate(iso) {
       if (!iso) return "–";
       return new Date(iso).toLocaleDateString("no-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -307,6 +375,8 @@
         if (activeFilters.size === 0) return false;
         const gruppe = kategoriserSted(n.placeOfPerformance);
         if (!activeFilters.has(gruppe)) return false;
+        if (activeTypes.size === 0) return false;
+        if (!activeTypes.has(n.type)) return false;
         if (søk) {
           const tittel = (n.heading || "").toLowerCase();
           const kjøper = (n.buyer?.[0]?.name || "").toLowerCase();
@@ -386,6 +456,7 @@
         allNotices = await fetchNotices();
         activeFilters = new Set(DEFAULT_FILTERS);
         renderFilters();
+        renderTypeFilters();
         renderResults();
       } catch (err) {
         document.getElementById("status-treff").textContent = "Kunne ikke hente data fra Doffin.";
