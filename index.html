@@ -248,9 +248,9 @@
           <div class="card-meta">
             <span>🏢 ${buyer}</span>
             <span>📍 ${places}</span>
-            <span class="${deadlineSoon ? "deadline-soon" : ""}">${deadlineSoon ? "⚠️ " : ""}${deadlineText}</span>
             ${publisert ? `<span>📅 ${publisert}</span>` : ""}
             <span>💰 ${verdi}</span>
+            <span class="${deadlineSoon ? "deadline-soon" : ""}"><strong>🗓️ ${deadlineSoon ? "⚠️ " : ""}${deadlineText}</strong></span>
           </div>
         `;
 
