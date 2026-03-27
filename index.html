@@ -126,8 +126,6 @@
   <script>
     const DOFFIN_BASE = "https://doffin.no/notices";
 
-    const DEFAULT_LOCATIONS = ["Oslo", "Akershus"];
-
     const TYPE_LABELS = {
       COMPETITION: "Konkurranse",
       ANNOUNCEMENT_OF_COMPETITION: "Kunngjøring av konkurranse",
@@ -135,8 +133,26 @@
       PRE_ANNOUNCEMENT: "Forhåndskunngjøring",
     };
 
+    const FILTER_GROUPS = ["Oslo", "Akershus", "Viken", "Resten av landet", "Ikke stedspesifikt", "Alle"];
+    const DEFAULT_FILTERS = new Set(["Oslo", "Akershus"]);
+
+    const OSLO_NAMES = ["Oslo"];
+    const AKERSHUS_NAMES = ["Akershus"];
+    const VIKEN_NAMES = ["Viken"];
+    const IKKE_STEDSPESIFIKT = ["Ikke oppgitt", "Norge", "Hele landet", "anyw"];
+
+    function kategoriserSted(placeOfPerformance) {
+      if (!placeOfPerformance || placeOfPerformance.length === 0) return "Ikke stedspesifikt";
+      const steder = placeOfPerformance.map((s) => s.trim());
+      if (steder.some((s) => IKKE_STEDSPESIFIKT.includes(s))) return "Ikke stedspesifikt";
+      if (steder.some((s) => OSLO_NAMES.includes(s))) return "Oslo";
+      if (steder.some((s) => AKERSHUS_NAMES.includes(s))) return "Akershus";
+      if (steder.some((s) => VIKEN_NAMES.includes(s))) return "Viken";
+      return "Resten av landet";
+    }
+
     let allNotices = [];
-    let activeFilters = new Set(DEFAULT_LOCATIONS);
+    let activeFilters = new Set(DEFAULT_FILTERS);
 
     async function fetchNotices() {
       const response = await fetch("data.json");
@@ -144,41 +160,41 @@
       return data.hits || [];
     }
 
-    function getLocations(notices) {
-      const all = new Set();
-      for (const n of notices) {
-        if (n.placeOfPerformance && n.placeOfPerformance.length > 0) {
-          for (const place of n.placeOfPerformance) {
-            all.add(place);
-          }
-        } else {
-          all.add("Ikke oppgitt");
-        }
-      }
-      return Array.from(all).sort((a, b) => {
-        if (a === "Ikke oppgitt") return 1;
-        if (b === "Ikke oppgitt") return -1;
-        return a.localeCompare(b, "no");
-      });
-    }
-
-    function renderFilters(locations) {
+    function renderFilters() {
       const container = document.getElementById("filters");
       container.innerHTML = "";
 
-      for (const loc of locations) {
+      const alleAktive = ["Oslo", "Akershus", "Viken", "Resten av landet", "Ikke stedspesifikt"].every(
+        (f) => activeFilters.has(f)
+      );
+
+      for (const filter of FILTER_GROUPS) {
         const chip = document.createElement("button");
-        chip.className = "chip" + (activeFilters.has(loc) ? " active" : "");
-        chip.textContent = loc;
+        const isAlle = filter === "Alle";
+        const isActive = isAlle ? alleAktive : activeFilters.has(filter);
+        chip.className = "chip" + (isActive ? " active" : "");
+        chip.textContent = filter;
+
         chip.addEventListener("click", () => {
-          if (activeFilters.has(loc)) {
-            activeFilters.delete(loc);
+          if (isAlle) {
+            if (alleAktive) {
+              activeFilters.clear();
+            } else {
+              ["Oslo", "Akershus", "Viken", "Resten av landet", "Ikke stedspesifikt"].forEach((f) =>
+                activeFilters.add(f)
+              );
+            }
           } else {
-            activeFilters.add(loc);
+            if (activeFilters.has(filter)) {
+              activeFilters.delete(filter);
+            } else {
+              activeFilters.add(filter);
+            }
           }
-          renderFilters(locations);
+          renderFilters();
           renderResults();
         });
+
         container.appendChild(chip);
       }
     }
@@ -200,11 +216,9 @@
       container.innerHTML = "";
 
       const filtered = allNotices.filter((n) => {
-        if (activeFilters.size === 0) return true;
-        if (!n.placeOfPerformance || n.placeOfPerformance.length === 0) {
-          return activeFilters.has("Ikke oppgitt");
-        }
-        return n.placeOfPerformance.some((p) => activeFilters.has(p));
+        if (activeFilters.size === 0) return false;
+        const gruppe = kategoriserSted(n.placeOfPerformance);
+        return activeFilters.has(gruppe);
       });
 
       noResults.style.display = filtered.length === 0 ? "block" : "none";
@@ -244,12 +258,8 @@
     async function init() {
       try {
         allNotices = await fetchNotices();
-        const locations = getLocations(allNotices);
-
-        // Sett default-filtre til de som faktisk finnes i dataen
-        activeFilters = new Set(DEFAULT_LOCATIONS.filter((l) => locations.includes(l)));
-
-        renderFilters(locations);
+        activeFilters = new Set(DEFAULT_FILTERS);
+        renderFilters();
         renderResults();
       } catch (err) {
         document.getElementById("status").textContent = "Kunne ikke hente data fra Doffin.";
