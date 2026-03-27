@@ -44,8 +44,19 @@
       border-color: #1a56db;
     }
 
-    #favoritt-rad {
-      margin-bottom: 10px;
+    #filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #filter-steder {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .favoritt-toggle {
@@ -57,19 +68,13 @@
       font-size: 0.85rem;
       user-select: none;
       transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
     }
 
     .favoritt-toggle.active {
       background: #f0c040;
       border-color: #f0c040;
       color: #333;
-    }
-
-    #filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
     }
 
     .chip {
@@ -178,10 +183,10 @@
   <h1>Doffin – IT-rammeavtaler</h1>
   <div id="status"><span id="status-treff">Henter utlysninger…</span><span id="status-dato"></span></div>
   <input id="sokefelt" type="search" placeholder="Søk i tittel eller oppdragsgiver…" />
-  <div id="favoritt-rad">
+  <div id="filters">
+    <div id="filter-steder"></div>
     <button class="favoritt-toggle" id="favoritt-toggle">⭐ Vis kun favoritter</button>
   </div>
-  <div id="filters"></div>
   <div id="no-results">Ingen utlysninger matcher søket.</div>
   <div id="results"></div>
 
@@ -243,7 +248,7 @@
     }
 
     function renderFilters() {
-      const container = document.getElementById("filters");
+      const container = document.getElementById("filter-steder");
       container.innerHTML = "";
       const teller = tellPerGruppe();
 
